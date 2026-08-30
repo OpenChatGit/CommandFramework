@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.1] - 2026-08-30
+
+### Added
+- Persistent Waypoint Display on Reselection: When deselecting and re-selecting a unit with an active commanded destination, its green waypoint marker and trajectory vector line are automatically restored and displayed on the tactical map.
+- Real-Time Waypoint Tracking: The waypoint trajectory line dynamically follows moving units across the map in real time.
+
 ## [0.4.0] - 2026-08-30
 
 ### Added
