@@ -183,12 +183,12 @@ namespace CommandFramework.Patches
         /// </summary>
         [HarmonyPrefix]
         [HarmonyPatch(typeof(ShipAI), "SetDestination")]
-        public static bool ShipAI_SetDestination_Prefix(ShipAI __instance, GlobalPosition destination)
+        public static bool ShipAI_SetDestination_Prefix(ShipAI __instance, GlobalPosition newDestination)
         {
             if (__instance != null)
             {
                 var unit = __instance.GetComponent<Unit>();
-                if (unit != null && !CommandFrameworkAPI.IsDestinationAllowed(unit, destination))
+                if (unit != null && !CommandFrameworkAPI.IsDestinationAllowed(unit, newDestination))
                 {
                     return false;
                 }
