@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.4] - 2026-08-30
+
+### Security & Multiplayer Privacy
+- Faction Isolation: Enforced strict friendly/spectator faction filtering. Hostile/enemy NPC waypoints and trajectory paths are never displayed on the tactical map or accessible via context commands in Multiplayer.
+
 ## [0.4.3] - 2026-08-30
 
 ### Fixed

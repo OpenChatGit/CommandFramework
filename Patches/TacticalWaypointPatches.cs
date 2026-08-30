@@ -72,7 +72,7 @@ namespace CommandFramework.Patches
                         if (unitIcon == null) continue;
 
                         var unit = unitIcon.unit;
-                        if (unit == null || unit.disabled) continue;
+                        if (unit == null || unit.disabled || !IsUnitFriendlyToPlayer(unit)) continue;
 
                         if (isShift)
                         {
@@ -131,7 +131,7 @@ namespace CommandFramework.Patches
             if (__instance.selectedIcons != null && __instance.selectedIcons.Count == 1)
             {
                 var icon = __instance.selectedIcons[0] as UnitMapIcon;
-                if (icon != null && icon.unit != null)
+                if (icon != null && icon.unit != null && IsUnitFriendlyToPlayer(icon.unit))
                 {
                     var queue = WaypointQueueManager.GetQueue(icon.unit);
                     if (queue != null && queue.Count > 0 && __instance.waypoints != null && __instance.waypoints.Count == queue.Count)
@@ -148,6 +148,13 @@ namespace CommandFramework.Patches
 
             var icon = map.selectedIcons[0] as UnitMapIcon;
             if (icon == null || icon.unit == null) return;
+
+            // Never show or restore waypoints for enemy units
+            if (!IsUnitFriendlyToPlayer(icon.unit))
+            {
+                map.ClearWaypoints();
+                return;
+            }
 
             var queue = WaypointQueueManager.GetQueue(icon.unit);
             if (queue != null && queue.Count > 0)
@@ -166,6 +173,28 @@ namespace CommandFramework.Patches
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Validates that a unit belongs to the player's friendly team or spectator mode.
+        /// Prevents viewing or issuing waypoints to enemy multiplayer NPCs.
+        /// </summary>
+        public static bool IsUnitFriendlyToPlayer(Unit unit)
+        {
+            if (unit == null) return false;
+
+            if (DynamicMap.i != null)
+            {
+                FactionMode mode = DynamicMap.GetFactionMode(unit.NetworkHQ, false);
+                return mode == FactionMode.Friendly || mode == FactionMode.Spectator;
+            }
+
+            if (GameManager.GetLocalHQ(out FactionHQ localHQ) && localHQ != null)
+            {
+                return unit.NetworkHQ == localHQ;
+            }
+
+            return true;
         }
 
         private static void RebuildWaypointsForQueue(DynamicMap map, UnitMapIcon icon, List<GlobalPosition> queue)
@@ -234,7 +263,7 @@ namespace CommandFramework.Patches
         private static bool TryGetUnitCommandedDestination(Unit unit, out GlobalPosition destination)
         {
             destination = default;
-            if (unit == null) return false;
+            if (unit == null || !IsUnitFriendlyToPlayer(unit)) return false;
 
             if (unit is GroundVehicle gv)
             {

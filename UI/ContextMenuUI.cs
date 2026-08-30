@@ -157,7 +157,7 @@ namespace CommandFramework.UI
         /// </summary>
         public static void OpenForUnit(Unit unit, Vector2 screenPos)
         {
-            if (unit == null || unit.disabled) return;
+            if (unit == null || unit.disabled || !Patches.TacticalWaypointPatches.IsUnitFriendlyToPlayer(unit)) return;
 
             if (Instance == null)
             {
