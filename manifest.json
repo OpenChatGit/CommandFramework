@@ -1,0 +1,9 @@
+{
+  "name": "CommandFramework",
+  "version_number": "0.3.1",
+  "website_url": "https://github.com/CommandFramework",
+  "description": "Tactical unit commanding framework and in-game context menu for Nuclear Option with STOP and RESUME orders, selection protection, and extensible developer API.",
+  "dependencies": [
+    "BepInEx-BepInExPack-5.4.2100"
+  ]
+}

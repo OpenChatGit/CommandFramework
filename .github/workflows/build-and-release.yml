@@ -1,0 +1,59 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore CommandFramework.csproj
+
+    - name: Build Plugin
+      run: dotnet build CommandFramework.csproj -c Release
+
+    - name: Package NOMM / Thunderstore Distribution
+      shell: pwsh
+      run: |
+        $distDir = "dist"
+        $staging = "dist/package"
+        New-Item -ItemType Directory -Path $staging -Force | Out-Null
+        Copy-Item "bin/Release/CommandFramework.dll" "$staging/CommandFramework.dll" -Force
+        Copy-Item "manifest.json" "$staging/manifest.json" -Force
+        Copy-Item "meta.json" "$staging/meta.json" -Force
+        Copy-Item "icon.png" "$staging/icon.png" -Force
+        Copy-Item "README.md" "$staging/README.md" -Force
+        Copy-Item "CHANGELOG.md" "$staging/CHANGELOG.md" -Force
+        Copy-Item "API_GUIDE.md" "$staging/API_GUIDE.md" -Force
+        Compress-Archive -Path "$staging/*" -DestinationPath "dist/CommandFramework-release.zip" -Force
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CommandFramework-Release
+        path: dist/CommandFramework-release.zip
+
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/CommandFramework-release.zip
+        body_path: CHANGELOG.md
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,15 @@
+# Build outputs
+bin/
+obj/
+dist/temp_package/
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS files
+.DS_Store
+Thumbs.db
