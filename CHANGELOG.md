@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.3] - 2026-08-30
+
+### Fixed
+- Multi-Waypoint Sequential Progression: Intercepted base game destination overrides so units stay locked onto their first waypoint when queuing additional waypoints with Shift+Click.
+- Waypoint Line Chaining: Ensured chained waypoints properly connect each marker sequentially from the preceding waypoint without resetting origin back to the NPC.
+
 ## [0.4.2] - 2026-08-30
 
 ### Added

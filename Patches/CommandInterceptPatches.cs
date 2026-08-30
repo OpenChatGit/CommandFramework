@@ -1,5 +1,6 @@
 using System;
 using CommandFramework.API;
+using CommandFramework.Commands;
 using HarmonyLib;
 using UnityEngine;
 
@@ -39,6 +40,34 @@ namespace CommandFramework.Patches
             if (player != null && HoldPositionManager.IsHoldingPosition(unit))
             {
                 HoldPositionManager.SetHoldPosition(unit, false);
+            }
+
+            // If unit has multiple waypoints in a sequential queue, keep unit driving to queue[0]
+            var queue = WaypointQueueManager.GetQueue(unit);
+            if (queue != null && queue.Count > 1)
+            {
+                GlobalPosition firstTarget = queue[0];
+                if ((Vector3)(waypoint - firstTarget) != Vector3.zero)
+                {
+                    CommandFrameworkPlugin.LogInfo($"[CommandFramework] Multi-waypoint active for '{unit.NetworkunitName}'. Keeping target locked on first waypoint.");
+                    
+                    if (unit is GroundVehicle gvQueue)
+                    {
+                        AccessTools.Field(typeof(GroundVehicle), "anchored")?.SetValue(gvQueue, false);
+                        AccessTools.Field(typeof(GroundVehicle), "resetStationary")?.SetValue(gvQueue, true);
+                        AccessTools.Field(typeof(GroundVehicle), "commandedDestination")?.SetValue(gvQueue, true);
+                        AccessTools.Field(typeof(GroundVehicle), "destination")?.SetValue(gvQueue, firstTarget);
+                    }
+                    else if (unit is Ship shipQueue)
+                    {
+                        var shipAIQueue = shipQueue.GetComponent<ShipAI>();
+                        if (shipAIQueue != null)
+                        {
+                            AccessTools.Field(typeof(ShipAI), "commandedDestination")?.SetValue(shipAIQueue, true);
+                        }
+                    }
+                    return false;
+                }
             }
 
             // Ensure ground vehicle is unanchored and moving

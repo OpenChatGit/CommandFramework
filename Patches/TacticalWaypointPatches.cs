@@ -58,7 +58,6 @@ namespace CommandFramework.Patches
         {
             if (__instance == null || !DynamicMap.mapMaximized) return;
 
-            // Check for Right Click down
             if (Input.GetMouseButtonDown(1))
             {
                 if (__instance.selectedIcons == null || __instance.selectedIcons.Count == 0) return;
@@ -89,7 +88,7 @@ namespace CommandFramework.Patches
         }
 
         /// <summary>
-        /// Postfix on DynamicMap.MapControls to ensure waypoints are green and correctly positioned.
+        /// Postfix on DynamicMap.MapControls to ensure all waypoints are green.
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(DynamicMap), "MapControls")]
@@ -118,7 +117,7 @@ namespace CommandFramework.Patches
         }
 
         /// <summary>
-        /// Keeps waypoints perfectly locked to map coordinates during pan / zoom and moving units.
+        /// Keeps waypoints locked to terrain coordinates during map panning and zooming.
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(DynamicMap), "UpdateMap")]
@@ -126,25 +125,18 @@ namespace CommandFramework.Patches
         {
             if (__instance == null || !DynamicMap.mapMaximized) return;
 
-            // If selected unit has waypoints, update markers in real-time
+            // Do not update positions while user is holding mouse buttons down
+            if (Input.GetMouseButton(0) || Input.GetMouseButton(1)) return;
+
             if (__instance.selectedIcons != null && __instance.selectedIcons.Count == 1)
             {
                 var icon = __instance.selectedIcons[0] as UnitMapIcon;
                 if (icon != null && icon.unit != null)
                 {
                     var queue = WaypointQueueManager.GetQueue(icon.unit);
-                    if (queue != null && queue.Count > 0)
+                    if (queue != null && queue.Count > 0 && __instance.waypoints != null && __instance.waypoints.Count == queue.Count)
                     {
-                        // Check if we need to build or rebuild map waypoints
-                        if (__instance.waypoints == null || __instance.waypoints.Count != queue.Count)
-                        {
-                            RebuildWaypointsForQueue(__instance, icon, queue);
-                        }
-                        else
-                        {
-                            UpdateExistingWaypoints(__instance, icon, queue);
-                        }
-                        return;
+                        UpdateExistingWaypoints(__instance, icon, queue);
                     }
                 }
             }
@@ -164,7 +156,6 @@ namespace CommandFramework.Patches
             }
             else
             {
-                // Fallback to single destination if unit already had a destination
                 if (TryGetUnitCommandedDestination(icon.unit, out GlobalPosition singleDest))
                 {
                     WaypointQueueManager.SetSingleWaypoint(icon.unit, singleDest);
