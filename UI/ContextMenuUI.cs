@@ -33,7 +33,13 @@ namespace CommandFramework.UI
         private bool _stylesInitialized;
 
         public static bool IsOpen => Instance != null && Instance._isOpen;
+        public static Rect MenuRect => Instance != null ? Instance._menuRect : Rect.zero;
         public static Unit CurrentUnit => Instance?._targetUnit;
+
+        public static void CloseMenu()
+        {
+            Close();
+        }
 
         private void Awake()
         {
@@ -55,10 +61,14 @@ namespace CommandFramework.UI
                 return;
             }
 
-            // Left-Click on Empty Space Deselection
-            if (Input.GetMouseButtonDown(0))
+            // If menu is open, clicking outside closes it
+            if (_isOpen && Input.GetMouseButtonDown(0))
             {
-                TryHandleLeftClick();
+                Vector2 mousePosImgui = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
+                if (!_menuRect.Contains(mousePosImgui))
+                {
+                    Close();
+                }
             }
 
             // 3D World Right Click
@@ -71,65 +81,6 @@ namespace CommandFramework.UI
             if (_isOpen && (_targetUnit == null || _targetUnit.disabled))
             {
                 Close();
-            }
-        }
-
-        private void TryHandleLeftClick()
-        {
-            // If clicking inside our open menu, let IMGUI process it
-            if (_isOpen)
-            {
-                Vector2 mousePosImgui = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
-                if (_menuRect.Contains(mousePosImgui)) return;
-                
-                // Clicking outside an open menu in 3D view simply closes the menu
-                if (!DynamicMap.mapMaximized)
-                {
-                    Close();
-                    return;
-                }
-            }
-
-            // Deselection ONLY applies when the tactical map is maximized/open
-            if (!DynamicMap.mapMaximized)
-            {
-                return;
-            }
-
-            // If clicking on any unit icon on the map, don't deselect (user is selecting/interacting)
-            if (Patches.RightClickSuppressor.TryGetUnitUnderCursor(out _)) return;
-
-            // Otherwise, it is an empty space click on the tactical map: deselect map icons
-            TryDeselectMapEmptySpace();
-        }
-
-        private void TryDeselectMapEmptySpace()
-        {
-            if (_isOpen)
-            {
-                Close();
-            }
-
-            try
-            {
-                // Deselect only on the Tactical Map
-                if (DynamicMap.i != null)
-                {
-                    DynamicMap.i.UnselectAll();
-                    DynamicMap.i.DeselectAllIcons();
-                }
-
-                // Clear Mission Editor map selection if active
-                if (NuclearOption.MissionEditorScripts.UnitSelection.i != null)
-                {
-                    NuclearOption.MissionEditorScripts.UnitSelection.i.ClearSelection();
-                }
-
-                CommandFrameworkPlugin.LogInfo("[CommandFramework] Deselected map units cleanly via empty map space left-click.");
-            }
-            catch (Exception ex)
-            {
-                CommandFrameworkPlugin.LogError($"[CommandFramework] Error during map deselection: {ex}");
             }
         }
 

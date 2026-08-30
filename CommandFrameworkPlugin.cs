@@ -13,7 +13,7 @@ namespace CommandFramework
     {
         public const string PluginGuid = "com.nuclearoption.commandframework";
         public const string PluginName = "Command Framework";
-        public const string PluginVersion = "0.4.6";
+        public const string PluginVersion = "0.4.7";
 
         public static CommandFrameworkPlugin Instance { get; private set; }
         public static ManualLogSource Log { get; private set; }
@@ -52,6 +52,46 @@ namespace CommandFramework
         private void Update()
         {
             WaypointQueueManager.Update();
+            HandleMapEmptySpaceLeftClick();
+        }
+
+        private void HandleMapEmptySpaceLeftClick()
+        {
+            // Deselection applies only when the tactical map is maximized
+            if (!DynamicMap.mapMaximized || DynamicMap.i == null) return;
+
+            if (!Input.GetMouseButtonDown(0)) return;
+
+            // If context menu is open
+            if (UI.ContextMenuUI.IsOpen)
+            {
+                Vector2 mousePosImgui = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
+                if (UI.ContextMenuUI.MenuRect.Contains(mousePosImgui)) return;
+
+                UI.ContextMenuUI.CloseMenu();
+            }
+
+            // If clicking on any unit icon on the map, don't deselect (user is selecting/interacting)
+            if (Patches.RightClickSuppressor.TryGetUnitUnderCursor(out _)) return;
+
+            // Empty space click on the tactical map: deselect map icons & waypoints cleanly
+            try
+            {
+                DynamicMap.i.UnselectAll();
+                DynamicMap.i.DeselectAllIcons();
+                DynamicMap.i.ClearWaypoints();
+
+                if (NuclearOption.MissionEditorScripts.UnitSelection.i != null)
+                {
+                    NuclearOption.MissionEditorScripts.UnitSelection.i.ClearSelection();
+                }
+
+                LogInfo("[CommandFramework] Deselected map units cleanly via empty map space left-click.");
+            }
+            catch (System.Exception ex)
+            {
+                LogError($"[CommandFramework] Error during map deselection: {ex}");
+            }
         }
 
         private void OnDestroy()

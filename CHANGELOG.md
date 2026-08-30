@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.7] - 2026-08-30
+
+### Fixed
+- Immediate Empty-Space Map Deselection: Moved left-click empty space deselection directly into `CommandFrameworkPlugin.Update()`, ensuring that map unit and waypoint deselection is active immediately upon game start without requiring the context menu to be opened first.
+
 ## [0.4.6] - 2026-08-30
 
 ### Fixed
