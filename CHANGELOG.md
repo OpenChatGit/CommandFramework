@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0] - 2026-08-30
+
+### Added
+- Green Tactical Waypoints: All map waypoints and trajectory vector lines are now rendered in vibrant Tactical Green (`#0FE078`) instead of the default yellow.
+- Robust AI Waypoint Following: Protected player-commanded destinations for Ground Vehicles and Ships against being dropped or overridden by background mission triggers, artillery search AI, or ambient patrols until arrival.
+- Ground Vehicle Un-Stuck & Nav Smoothing: Automatically releases hold position, clears anchoring, resets stationary flags, and smooths pathfinding upon receiving a move order.
+
 ## [0.3.2] - 2026-08-30
 
 ### Fixed
