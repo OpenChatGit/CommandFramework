@@ -2,13 +2,13 @@
   "id": "CommandFramework",
   "artifact": {
     "fileName": "CommandFramework.dll",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "category": "release",
     "type": "plugin",
     "gameVersion": "0.33",
     "downloadUrl": null,
     "downloadURL": null,
-    "hash": "sha256:397c2350d20988d6eb0d27d1be362e92da1ddada39869af7fc6a184433d0a463",
+    "hash": "sha256:86d7c1c81f69ba9e64a65d5bb0c8e40ecc692d923cc3b8250814d3c9862d4b1b",
     "extends": null,
     "dependencies": [],
     "incompatibilities": []

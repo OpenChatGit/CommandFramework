@@ -13,7 +13,7 @@ namespace CommandFramework
     {
         public const string PluginGuid = "com.nuclearoption.commandframework";
         public const string PluginName = "Command Framework";
-        public const string PluginVersion = "0.4.1";
+        public const string PluginVersion = "0.4.2";
 
         public static CommandFrameworkPlugin Instance { get; private set; }
         public static ManualLogSource Log { get; private set; }
@@ -47,6 +47,11 @@ namespace CommandFramework
             DontDestroyOnLoad(uiGo);
 
             Log.LogInfo($"{PluginName} ready! API and Context Menu initialized.");
+        }
+
+        private void Update()
+        {
+            WaypointQueueManager.Update();
         }
 
         private void OnDestroy()

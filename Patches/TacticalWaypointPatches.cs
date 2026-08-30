@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using CommandFramework.Commands;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,9 +9,9 @@ namespace CommandFramework.Patches
 {
     /// <summary>
     /// Harmony patches that:
-    /// 1. Recolor all map waypoints and trajectory vector lines to tactical neon Green (#0FE078).
-    /// 2. Automatically restore and display a unit's active waypoint when selecting or re-selecting it.
-    /// 3. Dynamically track the moving unit icon so the trajectory line stays connected in real-time.
+    /// 1. Render all map waypoints and trajectory vector lines in Tactical Green (#0FE078).
+    /// 2. Convert between map terrain coordinates and canvas screen coordinates accurately so waypoints stay fixed on the map.
+    /// 3. Support multi-waypoint queues (Shift + Click) and persistently re-render them upon unit selection.
     /// </summary>
     [HarmonyPatch]
     public static class TacticalWaypointPatches
@@ -17,9 +19,6 @@ namespace CommandFramework.Patches
         public static readonly Color TacticalGreen = new Color(0.06f, 0.88f, 0.50f, 1.0f);
         public static readonly Color TacticalGreenVector = new Color(0.06f, 0.88f, 0.50f, 0.75f);
 
-        /// <summary>
-        /// Postfix on MapWaypoint.PlaceMarker to apply tactical green coloring to the marker and vector.
-        /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(MapWaypoint), nameof(MapWaypoint.PlaceMarker))]
         public static void MapWaypoint_PlaceMarker_Postfix(MapWaypoint __instance)
@@ -27,9 +26,6 @@ namespace CommandFramework.Patches
             ApplyTacticalGreen(__instance);
         }
 
-        /// <summary>
-        /// Postfix on MapWaypoint.UpdateMarker to preserve tactical green coloring when scaled or updated.
-        /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(MapWaypoint), nameof(MapWaypoint.UpdateMarker))]
         public static void MapWaypoint_UpdateMarker_Postfix(MapWaypoint __instance)
@@ -37,9 +33,6 @@ namespace CommandFramework.Patches
             ApplyTacticalGreen(__instance);
         }
 
-        /// <summary>
-        /// Postfix on DynamicMap.Awake to tint the base waypoint prefabs.
-        /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(DynamicMap), "Awake")]
         public static void DynamicMap_Awake_Postfix(DynamicMap __instance)
@@ -57,7 +50,46 @@ namespace CommandFramework.Patches
         }
 
         /// <summary>
-        /// Postfix on DynamicMap.MapControls to ensure live dragging waypoint vector preview is tinted green.
+        /// Intercepts right-clicks on the tactical map to manage waypoint queues (Shift-Click).
+        /// </summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(DynamicMap), "MapControls")]
+        public static void DynamicMap_MapControls_Prefix(DynamicMap __instance)
+        {
+            if (__instance == null || !DynamicMap.mapMaximized) return;
+
+            // Check for Right Click down
+            if (Input.GetMouseButtonDown(1))
+            {
+                if (__instance.selectedIcons == null || __instance.selectedIcons.Count == 0) return;
+
+                bool isShift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
+                if (__instance.TryGetCursorCoordinates(out GlobalPosition cursorCoordinates))
+                {
+                    for (int i = 0; i < __instance.selectedIcons.Count; i++)
+                    {
+                        var unitIcon = __instance.selectedIcons[i] as UnitMapIcon;
+                        if (unitIcon == null) continue;
+
+                        var unit = unitIcon.unit;
+                        if (unit == null || unit.disabled) continue;
+
+                        if (isShift)
+                        {
+                            WaypointQueueManager.AppendWaypoint(unit, cursorCoordinates);
+                        }
+                        else
+                        {
+                            WaypointQueueManager.SetSingleWaypoint(unit, cursorCoordinates);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Postfix on DynamicMap.MapControls to ensure waypoints are green and correctly positioned.
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(DynamicMap), "MapControls")]
@@ -75,74 +107,137 @@ namespace CommandFramework.Patches
         }
 
         /// <summary>
-        /// Postfix on DynamicMap.SelectIcon(Unit) to restore the unit's active waypoint if reselected.
+        /// Restores waypoint chain when selecting a unit.
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(DynamicMap), nameof(DynamicMap.SelectIcon), new Type[] { typeof(Unit) })]
         public static void DynamicMap_SelectIcon_Postfix(DynamicMap __instance, Unit unit)
         {
             if (__instance == null || unit == null) return;
-            TryRestoreUnitWaypoint(__instance, unit);
+            RefreshMapWaypoints(__instance);
         }
 
         /// <summary>
-        /// Postfix on DynamicMap.UpdateMap to dynamically update the waypoint trajectory line
-        /// as the selected unit moves across the map.
+        /// Keeps waypoints perfectly locked to map coordinates during pan / zoom and moving units.
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(DynamicMap), "UpdateMap")]
         public static void DynamicMap_UpdateMap_Postfix(DynamicMap __instance)
         {
-            if (__instance == null || __instance.waypoints == null || __instance.waypoints.Count != 1) return;
-            if (__instance.selectedIcons == null || __instance.selectedIcons.Count != 1) return;
+            if (__instance == null || !DynamicMap.mapMaximized) return;
 
-            var icon = __instance.selectedIcons[0] as UnitMapIcon;
-            if (icon == null || icon.iconImage == null) return;
-
-            var wp = __instance.waypoints[0];
-            if (wp == null || wp.marker == null || wp.vector == null) return;
-
-            Vector3 currentUnitMapPos = icon.iconImage.transform.localPosition;
-            wp.previousWaypoint = currentUnitMapPos;
-            wp.PlaceMarker();
-            ApplyTacticalGreen(wp);
+            // If selected unit has waypoints, update markers in real-time
+            if (__instance.selectedIcons != null && __instance.selectedIcons.Count == 1)
+            {
+                var icon = __instance.selectedIcons[0] as UnitMapIcon;
+                if (icon != null && icon.unit != null)
+                {
+                    var queue = WaypointQueueManager.GetQueue(icon.unit);
+                    if (queue != null && queue.Count > 0)
+                    {
+                        // Check if we need to build or rebuild map waypoints
+                        if (__instance.waypoints == null || __instance.waypoints.Count != queue.Count)
+                        {
+                            RebuildWaypointsForQueue(__instance, icon, queue);
+                        }
+                        else
+                        {
+                            UpdateExistingWaypoints(__instance, icon, queue);
+                        }
+                        return;
+                    }
+                }
+            }
         }
 
-        /// <summary>
-        /// Checks if the unit has an active commanded destination and spawns the green waypoint visual.
-        /// </summary>
-        public static void TryRestoreUnitWaypoint(DynamicMap map, Unit unit)
+        public static void RefreshMapWaypoints(DynamicMap map)
         {
-            if (map == null || unit == null || map.waypoints == null) return;
-            if (map.waypoints.Count > 0) return;
+            if (map == null || map.selectedIcons == null || map.selectedIcons.Count != 1) return;
 
-            if (!TryGetUnitCommandedDestination(unit, out GlobalPosition dest)) return;
+            var icon = map.selectedIcons[0] as UnitMapIcon;
+            if (icon == null || icon.unit == null) return;
 
-            GlobalPosition currentPos = GlobalPositionExtensions.GlobalPosition(unit.transform);
-            Vector3 diff = (Vector3)(currentPos - dest);
-            if (diff.sqrMagnitude < 50f * 50f) return;
+            var queue = WaypointQueueManager.GetQueue(icon.unit);
+            if (queue != null && queue.Count > 0)
+            {
+                RebuildWaypointsForQueue(map, icon, queue);
+            }
+            else
+            {
+                // Fallback to single destination if unit already had a destination
+                if (TryGetUnitCommandedDestination(icon.unit, out GlobalPosition singleDest))
+                {
+                    WaypointQueueManager.SetSingleWaypoint(icon.unit, singleDest);
+                    var singleQueue = WaypointQueueManager.GetQueue(icon.unit);
+                    if (singleQueue != null && singleQueue.Count > 0)
+                    {
+                        RebuildWaypointsForQueue(map, icon, singleQueue);
+                    }
+                }
+            }
+        }
 
-            if (!DynamicMap.TryGetMapIcon(unit, out UnitMapIcon unitIcon) || unitIcon == null) return;
-
-            Vector3 unitMapPos = unitIcon.iconImage != null ? unitIcon.iconImage.transform.localPosition : unitIcon.transform.localPosition;
-
-            Vector3 destV3 = dest.AsVector3() * map.mapDisplayFactor;
-            Vector3 mapDestPos = new Vector3(destV3.x, destV3.z, 0f);
+        private static void RebuildWaypointsForQueue(DynamicMap map, UnitMapIcon icon, List<GlobalPosition> queue)
+        {
+            map.ClearWaypoints();
 
             if (map.mapWaypoint == null || map.mapWaypointVector == null || map.iconLayer == null) return;
 
-            GameObject marker = UnityEngine.Object.Instantiate(map.mapWaypoint, map.iconLayer.transform);
-            GameObject vector = UnityEngine.Object.Instantiate(map.mapWaypointVector, map.iconLayer.transform);
+            Vector3 prevLocalPos = icon.transform.localPosition;
 
-            MapWaypoint wp = new MapWaypoint(mapDestPos, unitMapPos, marker, vector);
-            ApplyTacticalGreen(wp);
-
-            map.waypoints.Add(wp);
-            if (map.constructWaypoints != null)
+            for (int i = 0; i < queue.Count; i++)
             {
-                map.constructWaypoints.Clear();
-                map.constructWaypoints.Add(dest);
+                GlobalPosition wpPos = queue[i];
+                Vector3 screenPos = GlobalPositionToScreenPoint(map, wpPos);
+
+                GameObject marker = UnityEngine.Object.Instantiate(map.mapWaypoint, map.iconLayer.transform);
+                GameObject vector = UnityEngine.Object.Instantiate(map.mapWaypointVector, map.iconLayer.transform);
+
+                MapWaypoint wp = new MapWaypoint(screenPos, prevLocalPos, marker, vector);
+                ApplyTacticalGreen(wp);
+
+                map.waypoints.Add(wp);
+                prevLocalPos = marker.transform.localPosition;
             }
+        }
+
+        private static void UpdateExistingWaypoints(DynamicMap map, UnitMapIcon icon, List<GlobalPosition> queue)
+        {
+            if (map.waypoints == null || map.waypoints.Count != queue.Count) return;
+
+            Vector3 prevLocalPos = icon.transform.localPosition;
+
+            for (int i = 0; i < queue.Count; i++)
+            {
+                var wp = map.waypoints[i];
+                if (wp == null || wp.marker == null || wp.vector == null) continue;
+
+                GlobalPosition wpPos = queue[i];
+                Vector3 screenPos = GlobalPositionToScreenPoint(map, wpPos);
+
+                wp.waypointPosition = screenPos;
+                wp.previousWaypoint = prevLocalPos;
+                wp.PlaceMarker();
+                ApplyTacticalGreen(wp);
+
+                prevLocalPos = wp.marker.transform.localPosition;
+            }
+        }
+
+        /// <summary>
+        /// Accurately converts a GlobalPosition (game terrain) to Screen Canvas position.
+        /// </summary>
+        public static Vector3 GlobalPositionToScreenPoint(DynamicMap map, GlobalPosition pos)
+        {
+            if (map == null || map.mapImage == null) return Vector3.zero;
+
+            float scaleX = map.mapImage.transform.lossyScale.x;
+            if (scaleX <= 0.0001f) scaleX = 1f;
+
+            float factor = (900f * scaleX) / map.mapDimension;
+            Vector3 offset = new Vector3(pos.x * factor, pos.z * factor, 0f);
+
+            return map.mapImage.transform.position + offset;
         }
 
         private static bool TryGetUnitCommandedDestination(Unit unit, out GlobalPosition destination)

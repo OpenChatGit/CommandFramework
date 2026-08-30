@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.2] - 2026-08-30
+
+### Added
+- Sequential Multi-Waypoint Queues (Shift + Click): Shift-clicking on the tactical map now creates a true multi-waypoint queue. Units navigate sequentially from waypoint to waypoint until reaching the final destination.
+- Accurate Terrain-to-Screen Map Coordinate Projection: Waypoints are precisely projected to map screen coordinates using map dimensions and scale, preventing waypoint drift or markers going out of the map bounds during zooming and panning.
+
 ## [0.4.1] - 2026-08-30
 
 ### Added
