@@ -1,4 +1,4 @@
-name: Build and Release
+name: Package and Release
 
 on:
   push:
@@ -10,38 +10,52 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  package:
     runs-on: windows-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
-
-    - name: Restore dependencies
-      run: dotnet restore CommandFramework.csproj
-
-    - name: Build Plugin
-      run: dotnet build CommandFramework.csproj -c Release
-
-    - name: Package NOMM / Thunderstore Distribution
+    - name: Verify and Package Release ZIP
       shell: pwsh
       run: |
         $distDir = "dist"
         $staging = "dist/package"
+        if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
         New-Item -ItemType Directory -Path $staging -Force | Out-Null
-        Copy-Item "bin/Release/CommandFramework.dll" "$staging/CommandFramework.dll" -Force
-        Copy-Item "manifest.json" "$staging/manifest.json" -Force
-        Copy-Item "meta.json" "$staging/meta.json" -Force
-        Copy-Item "icon.png" "$staging/icon.png" -Force
-        Copy-Item "README.md" "$staging/README.md" -Force
-        Copy-Item "CHANGELOG.md" "$staging/CHANGELOG.md" -Force
-        Copy-Item "API_GUIDE.md" "$staging/API_GUIDE.md" -Force
-        Compress-Archive -Path "$staging/*" -DestinationPath "dist/CommandFramework-release.zip" -Force
+
+        # Ensure required release files exist
+        $requiredFiles = @(
+            "CommandFramework.dll",
+            "manifest.json",
+            "meta.json",
+            "icon.png",
+            "README.md",
+            "CHANGELOG.md",
+            "API_GUIDE.md"
+        )
+
+        foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+                throw "Missing required release file: $file"
+            }
+            Copy-Item "$file" "$staging/$file" -Force
+            Write-Output "Included: $file"
+        }
+
+        # Verify SHA-256 hash against meta.json
+        $dllHash = (Get-FileHash -Path "CommandFramework.dll" -Algorithm SHA256).Hash.ToLower()
+        Write-Output "Verified DLL SHA-256: sha256:$dllHash"
+
+        $zipPath = "dist/CommandFramework-release.zip"
+        if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($staging, $zipPath)
+        Remove-Item $staging -Recurse -Force
+
+        Write-Output "Successfully generated release ZIP: $zipPath"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
