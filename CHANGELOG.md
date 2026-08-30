@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.8] - 2026-08-30
+
+### Added
+- "FOLLOW NAV" Tactical Status UI: Units following a waypoint queue now dynamically display `[ FOLLOW NAV ]` in vibrant tactical green on map tooltips, unit selection text, and inside the Command Context Menu (instead of generic navigation text).
+
 ## [0.4.7] - 2026-08-30
 
 ### Fixed

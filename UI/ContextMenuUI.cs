@@ -120,7 +120,7 @@ namespace CommandFramework.UI
             Instance._isOpen = true;
 
             var visibleActions = CommandFrameworkAPI.GetVisibleCommandsForUnit(unit);
-            float totalHeight = 44f + (visibleActions.Count * 28f);
+            float totalHeight = 58f + (visibleActions.Count * 28f);
 
             float imguiX = Mathf.Clamp(screenPos.x, 10f, Screen.width - 190f);
             float imguiY = Mathf.Clamp(Screen.height - screenPos.y, 10f, Screen.height - totalHeight - 20f);
@@ -217,11 +217,26 @@ namespace CommandFramework.UI
 
             string unitName = !string.IsNullOrEmpty(_targetUnit.NetworkunitName) ? _targetUnit.NetworkunitName : _targetUnit.name;
             bool isHolding = HoldPositionManager.IsHoldingPosition(_targetUnit);
+            var queue = WaypointQueueManager.GetQueue(_targetUnit);
+            bool isFollowingNav = queue != null && queue.Count > 0;
+
+            string statusBadge = isHolding ? "HOLDING" : (isFollowingNav ? "FOLLOW NAV" : "ACTIVE");
+            Color statusColor = isHolding ? new Color(1.0f, 0.75f, 0.25f) : (isFollowingNav ? new Color(0.06f, 0.88f, 0.50f) : new Color(0.7f, 0.85f, 0.95f));
 
             GUILayout.BeginVertical();
 
             // Minimal Title
             GUILayout.Label(unitName.ToUpper(), _headerStyle);
+            
+            // Status Badge
+            GUIStyle statusStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 9,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = statusColor }
+            };
+            GUILayout.Label($"[ {statusBadge} ]", statusStyle);
             GUILayout.Space(4);
 
             // Dynamic Action Buttons

@@ -35,6 +35,30 @@ namespace CommandFramework.Patches
             ApplyTacticalGreen(__instance);
         }
 
+        /// <summary>
+        /// Appends [ FOLLOW NAV ] or [ HOLDING ] to unit map tooltips and selection text.
+        /// </summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(UnitMapIcon), nameof(UnitMapIcon.GetInfoText))]
+        public static void UnitMapIcon_GetInfoText_Postfix(UnitMapIcon __instance, ref string __result)
+        {
+            if (__instance == null || __instance.unit == null) return;
+
+            var unit = __instance.unit;
+            if (HoldPositionManager.IsHoldingPosition(unit))
+            {
+                __result += "\n<color=#FFAA20>[ HOLDING ]</color>";
+            }
+            else
+            {
+                var queue = WaypointQueueManager.GetQueue(unit);
+                if (queue != null && queue.Count > 0)
+                {
+                    __result += "\n<color=#0FE078>[ FOLLOW NAV ]</color>";
+                }
+            }
+        }
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(DynamicMap), "Awake")]
         public static void DynamicMap_Awake_Postfix(DynamicMap __instance)
