@@ -13,7 +13,7 @@ namespace CommandFramework
     {
         public const string PluginGuid = "com.nuclearoption.commandframework";
         public const string PluginName = "Command Framework";
-        public const string PluginVersion = "0.4.8";
+        public const string PluginVersion = "0.5.0";
 
         public static CommandFrameworkPlugin Instance { get; private set; }
         public static ManualLogSource Log { get; private set; }
@@ -40,6 +40,8 @@ namespace CommandFramework
 
             // Register default built-in commands
             CommandFrameworkAPI.RegisterCommand(new HoldPositionCommandAction());
+            CommandFrameworkAPI.RegisterCommand(new HoldFireCommandAction());
+            CommandFrameworkAPI.RegisterCommand(new PatrolLoopCommandAction());
 
             // Ensure UI controller is spawned
             var uiGo = new GameObject("CommandFramework_UI");

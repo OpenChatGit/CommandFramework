@@ -217,11 +217,18 @@ namespace CommandFramework.UI
 
             string unitName = !string.IsNullOrEmpty(_targetUnit.NetworkunitName) ? _targetUnit.NetworkunitName : _targetUnit.name;
             bool isHolding = HoldPositionManager.IsHoldingPosition(_targetUnit);
+            bool isHoldFire = HoldFireManager.IsHoldFire(_targetUnit);
+            bool isLoop = WaypointQueueManager.IsLoopMode(_targetUnit);
             var queue = WaypointQueueManager.GetQueue(_targetUnit);
             bool isFollowingNav = queue != null && queue.Count > 0;
 
-            string statusBadge = isHolding ? "HOLDING" : (isFollowingNav ? "FOLLOW NAV" : "ACTIVE");
-            Color statusColor = isHolding ? new Color(1.0f, 0.75f, 0.25f) : (isFollowingNav ? new Color(0.06f, 0.88f, 0.50f) : new Color(0.7f, 0.85f, 0.95f));
+            string statusBadge = isHolding ? "HOLDING" : (isLoop ? "PATROL LOOP" : (isFollowingNav ? "FOLLOW NAV" : "ACTIVE"));
+            Color statusColor = isHolding ? new Color(1.0f, 0.75f, 0.25f) : (isFollowingNav || isLoop ? new Color(0.06f, 0.88f, 0.50f) : new Color(0.7f, 0.85f, 0.95f));
+
+            if (isHoldFire)
+            {
+                statusBadge += " • WEAPONS HOLD";
+            }
 
             GUILayout.BeginVertical();
 
@@ -249,9 +256,7 @@ namespace CommandFramework.UI
                     style = isHolding ? _buttonMinimalResumeStyle : _buttonMinimalStopStyle;
                 }
                 
-                string label = action.Id == "core.hold_position" 
-                    ? (isHolding ? "▶ RESUME" : "⏹ STOP") 
-                    : action.GetDisplayName(_targetUnit);
+                string label = action.GetDisplayName(_targetUnit);
 
                 GUI.enabled = action.IsEnabled(_targetUnit);
                 if (GUILayout.Button(label, style, GUILayout.Height(24)))

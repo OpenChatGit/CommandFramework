@@ -36,7 +36,7 @@ namespace CommandFramework.Patches
         }
 
         /// <summary>
-        /// Appends [ FOLLOW NAV ] or [ HOLDING ] to unit map tooltips and selection text.
+        /// Appends [ FOLLOW NAV ], [ PATROL LOOP ], [ HOLDING ], and [ HOLD FIRE ] to unit map tooltips and selection text.
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(UnitMapIcon), nameof(UnitMapIcon.GetInfoText))]
@@ -54,8 +54,20 @@ namespace CommandFramework.Patches
                 var queue = WaypointQueueManager.GetQueue(unit);
                 if (queue != null && queue.Count > 0)
                 {
-                    __result += "\n<color=#0FE078>[ FOLLOW NAV ]</color>";
+                    if (WaypointQueueManager.IsLoopMode(unit))
+                    {
+                        __result += "\n<color=#0FE078>[ PATROL LOOP ]</color>";
+                    }
+                    else
+                    {
+                        __result += "\n<color=#0FE078>[ FOLLOW NAV ]</color>";
+                    }
                 }
+            }
+
+            if (HoldFireManager.IsHoldFire(unit))
+            {
+                __result += "\n<color=#FF4455>[ HOLD FIRE ]</color>";
             }
         }
 
@@ -268,6 +280,27 @@ namespace CommandFramework.Patches
 
                 map.waypoints.Add(wp);
                 prevLocalPos = markerLocalPos;
+            }
+
+            // If patrol loop is enabled, draw closing vector from last waypoint to first waypoint
+            if (WaypointQueueManager.IsLoopMode(icon.unit) && map.waypoints.Count > 1)
+            {
+                var firstWp = map.waypoints[0];
+                var lastWp = map.waypoints[map.waypoints.Count - 1];
+
+                if (firstWp.marker != null && lastWp.marker != null)
+                {
+                    GameObject loopVector = UnityEngine.Object.Instantiate(map.mapWaypointVector, iconLayerTransform);
+                    RecolorGameObjectHierarchy(loopVector, TacticalGreenVector);
+
+                    Vector3 startPos = lastWp.marker.transform.localPosition;
+                    Vector3 endPos = firstWp.marker.transform.localPosition;
+                    Vector3 dir = endPos - startPos;
+
+                    loopVector.transform.localPosition = startPos;
+                    loopVector.transform.localRotation = Quaternion.FromToRotation(Vector3.up, dir);
+                    loopVector.transform.localScale = new Vector3(1f, dir.magnitude, 1f);
+                }
             }
         }
 

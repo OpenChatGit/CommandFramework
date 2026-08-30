@@ -81,6 +81,9 @@ namespace CommandFramework
         {
             if (unit == null) return;
 
+            // Pause and stash any active waypoint queue
+            Commands.WaypointQueueManager.PauseQueue(unit);
+
             // Ground vehicle hold
             if (unit is GroundVehicle gv)
             {
@@ -97,12 +100,26 @@ namespace CommandFramework
                     AccessTools.Method(typeof(ShipAI), "StartHoldPosition")?.Invoke(shipAI, null);
                 }
             }
+
+            if (DynamicMap.i != null && DynamicMap.mapMaximized)
+            {
+                DynamicMap.i.ClearWaypoints();
+            }
         }
 
         private static void ApplyResume(Unit unit)
         {
             if (unit == null) return;
-            NudgeAI(unit);
+
+            // Check if unit has stashed waypoints to resume
+            if (Commands.WaypointQueueManager.HasPausedQueue(unit))
+            {
+                Commands.WaypointQueueManager.ResumeQueue(unit);
+            }
+            else
+            {
+                NudgeAI(unit);
+            }
         }
 
         /// <summary>

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0] - 2026-08-30
+
+### Added
+- Rules of Engagement (RoE) Toggle: `HOLD FIRE` / `ENGAGE AT WILL` command action in Context Menu and API. When Hold Fire is active, turrets, fire control missile salvos, and weapons are safely held.
+- Continuous Patrol Loop Mode (`PATROL LOOP`): When enabled on multi-waypoint routes, the last waypoint connects back to the first waypoint ($W_N \rightarrow W_1$), continuously cycling the route until stopped.
+- Waypoint Stashing on Stop: Pressing `STOP` temporarily pauses and stashes active waypoints; pressing `RESUME` seamlessly restores and resumes the waypoint chain.
+
 ## [0.4.8] - 2026-08-30
 
 ### Added
