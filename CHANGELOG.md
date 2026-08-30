@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.6] - 2026-08-30
+
+### Fixed
+- Instant Live Waypoint Chaining: Intercepted MapControls Postfix so that chained multi-waypoints are instantly drawn in perfect green sequential order on the exact frame of the click without needing to deselect and re-select the unit.
+
 ## [0.4.5] - 2026-08-30
 
 ### Fixed

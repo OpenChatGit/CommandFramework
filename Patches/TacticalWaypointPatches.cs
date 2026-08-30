@@ -12,7 +12,8 @@ namespace CommandFramework.Patches
     /// 1. Render all map waypoints and trajectory vector lines in Tactical Green (#0FE078).
     /// 2. Convert between map terrain coordinates and canvas screen coordinates accurately so waypoints stay fixed on the map.
     /// 3. Support multi-waypoint queues (Shift + Click) chained sequentially from waypoint to waypoint.
-    /// 4. Protect against viewing or commanding enemy NPCs in Multiplayer.
+    /// 4. Instantly rebuild and display chained waypoints on the exact frame of the click.
+    /// 5. Protect against viewing or commanding enemy NPCs in Multiplayer.
     /// </summary>
     [HarmonyPatch]
     public static class TacticalWaypointPatches
@@ -83,26 +84,36 @@ namespace CommandFramework.Patches
                         {
                             WaypointQueueManager.SetSingleWaypoint(unit, cursorCoordinates);
                         }
-
-                        // Immediately rebuild and chain the green waypoints
-                        var queue = WaypointQueueManager.GetQueue(unit);
-                        if (queue != null && queue.Count > 0)
-                        {
-                            RebuildWaypointsForQueue(__instance, unitIcon, queue);
-                        }
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Postfix on DynamicMap.MapControls to ensure all waypoints are green and chained.
+        /// Postfix on DynamicMap.MapControls to immediately clean and rebuild chained green waypoints.
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(DynamicMap), "MapControls")]
         public static void DynamicMap_MapControls_Postfix(DynamicMap __instance)
         {
-            if (__instance == null) return;
+            if (__instance == null || !DynamicMap.mapMaximized) return;
+
+            if (Input.GetMouseButtonDown(1))
+            {
+                if (__instance.selectedIcons != null && __instance.selectedIcons.Count == 1)
+                {
+                    var unitIcon = __instance.selectedIcons[0] as UnitMapIcon;
+                    if (unitIcon != null && unitIcon.unit != null && IsUnitFriendlyToPlayer(unitIcon.unit))
+                    {
+                        var queue = WaypointQueueManager.GetQueue(unitIcon.unit);
+                        if (queue != null && queue.Count > 0)
+                        {
+                            RebuildWaypointsForQueue(__instance, unitIcon, queue);
+                            return;
+                        }
+                    }
+                }
+            }
 
             if (__instance.waypoints != null && __instance.waypoints.Count > 0)
             {

@@ -13,7 +13,7 @@ namespace CommandFramework
     {
         public const string PluginGuid = "com.nuclearoption.commandframework";
         public const string PluginName = "Command Framework";
-        public const string PluginVersion = "0.4.5";
+        public const string PluginVersion = "0.4.6";
 
         public static CommandFrameworkPlugin Instance { get; private set; }
         public static ManualLogSource Log { get; private set; }
