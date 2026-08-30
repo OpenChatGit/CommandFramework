@@ -1,6 +1,6 @@
 {
   "name": "CommandFramework",
-  "version_number": "0.4.4",
+  "version_number": "0.4.5",
   "website_url": "https://github.com/CommandFramework",
   "description": "Tactical unit commanding framework and in-game context menu for Nuclear Option with STOP and RESUME orders, selection protection, and extensible developer API.",
   "dependencies": [

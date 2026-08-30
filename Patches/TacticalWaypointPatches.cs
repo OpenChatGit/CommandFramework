@@ -11,7 +11,8 @@ namespace CommandFramework.Patches
     /// Harmony patches that:
     /// 1. Render all map waypoints and trajectory vector lines in Tactical Green (#0FE078).
     /// 2. Convert between map terrain coordinates and canvas screen coordinates accurately so waypoints stay fixed on the map.
-    /// 3. Support multi-waypoint queues (Shift + Click) and persistently re-render them upon unit selection.
+    /// 3. Support multi-waypoint queues (Shift + Click) chained sequentially from waypoint to waypoint.
+    /// 4. Protect against viewing or commanding enemy NPCs in Multiplayer.
     /// </summary>
     [HarmonyPatch]
     public static class TacticalWaypointPatches
@@ -82,13 +83,20 @@ namespace CommandFramework.Patches
                         {
                             WaypointQueueManager.SetSingleWaypoint(unit, cursorCoordinates);
                         }
+
+                        // Immediately rebuild and chain the green waypoints
+                        var queue = WaypointQueueManager.GetQueue(unit);
+                        if (queue != null && queue.Count > 0)
+                        {
+                            RebuildWaypointsForQueue(__instance, unitIcon, queue);
+                        }
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Postfix on DynamicMap.MapControls to ensure all waypoints are green.
+        /// Postfix on DynamicMap.MapControls to ensure all waypoints are green and chained.
         /// </summary>
         [HarmonyPostfix]
         [HarmonyPatch(typeof(DynamicMap), "MapControls")]
@@ -125,7 +133,6 @@ namespace CommandFramework.Patches
         {
             if (__instance == null || !DynamicMap.mapMaximized) return;
 
-            // Do not update positions while user is holding mouse buttons down
             if (Input.GetMouseButton(0) || Input.GetMouseButton(1)) return;
 
             if (__instance.selectedIcons != null && __instance.selectedIcons.Count == 1)
@@ -197,27 +204,33 @@ namespace CommandFramework.Patches
             return true;
         }
 
-        private static void RebuildWaypointsForQueue(DynamicMap map, UnitMapIcon icon, List<GlobalPosition> queue)
+        public static void RebuildWaypointsForQueue(DynamicMap map, UnitMapIcon icon, List<GlobalPosition> queue)
         {
+            if (map == null || icon == null || queue == null || queue.Count == 0) return;
+
             map.ClearWaypoints();
 
             if (map.mapWaypoint == null || map.mapWaypointVector == null || map.iconLayer == null) return;
 
-            Vector3 prevLocalPos = icon.transform.localPosition;
+            Transform iconLayerTransform = map.iconLayer.transform;
+            Vector3 prevLocalPos = iconLayerTransform.InverseTransformPoint(icon.transform.position);
 
             for (int i = 0; i < queue.Count; i++)
             {
                 GlobalPosition wpPos = queue[i];
                 Vector3 screenPos = GlobalPositionToScreenPoint(map, wpPos);
 
-                GameObject marker = UnityEngine.Object.Instantiate(map.mapWaypoint, map.iconLayer.transform);
-                GameObject vector = UnityEngine.Object.Instantiate(map.mapWaypointVector, map.iconLayer.transform);
+                GameObject marker = UnityEngine.Object.Instantiate(map.mapWaypoint, iconLayerTransform);
+                GameObject vector = UnityEngine.Object.Instantiate(map.mapWaypointVector, iconLayerTransform);
+
+                marker.transform.position = screenPos;
+                Vector3 markerLocalPos = marker.transform.localPosition;
 
                 MapWaypoint wp = new MapWaypoint(screenPos, prevLocalPos, marker, vector);
                 ApplyTacticalGreen(wp);
 
                 map.waypoints.Add(wp);
-                prevLocalPos = marker.transform.localPosition;
+                prevLocalPos = markerLocalPos;
             }
         }
 
@@ -225,7 +238,8 @@ namespace CommandFramework.Patches
         {
             if (map.waypoints == null || map.waypoints.Count != queue.Count) return;
 
-            Vector3 prevLocalPos = icon.transform.localPosition;
+            Transform iconLayerTransform = map.iconLayer.transform;
+            Vector3 prevLocalPos = iconLayerTransform.InverseTransformPoint(icon.transform.position);
 
             for (int i = 0; i < queue.Count; i++)
             {

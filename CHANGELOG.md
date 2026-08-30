@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.5] - 2026-08-30
+
+### Fixed
+- Chained Multi-Waypoint Vectors: Fixed Shift-Click waypoint vectors originating from the NPC by computing exact local canvas offsets. Subsequent waypoints connect directly from the preceding waypoint marker ($WP_{i-1} \rightarrow WP_i$).
+
 ## [0.4.4] - 2026-08-30
 
 ### Security & Multiplayer Privacy
