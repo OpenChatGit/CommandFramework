@@ -86,6 +86,7 @@ namespace CommandFramework.Patches
 
             if (Input.GetMouseButtonDown(1))
             {
+                if (RightClickSuppressor.TryGetUnitUnderCursor(out _)) return;
                 if (__instance.selectedIcons == null || __instance.selectedIcons.Count == 0) return;
 
                 bool isShift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
@@ -124,6 +125,7 @@ namespace CommandFramework.Patches
 
             if (Input.GetMouseButtonDown(1))
             {
+                if (RightClickSuppressor.TryGetUnitUnderCursor(out _)) return;
                 if (__instance.selectedIcons != null && __instance.selectedIcons.Count == 1)
                 {
                     var unitIcon = __instance.selectedIcons[0] as UnitMapIcon;
