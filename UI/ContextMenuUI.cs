@@ -81,16 +81,29 @@ namespace CommandFramework.UI
             {
                 Vector2 mousePosImgui = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
                 if (_menuRect.Contains(mousePosImgui)) return;
+                
+                // Clicking outside an open menu in 3D view simply closes the menu
+                if (!DynamicMap.mapMaximized)
+                {
+                    Close();
+                    return;
+                }
             }
 
-            // If clicking on any unit (map icon or 3D world), don't deselect (user is selecting/interacting)
+            // Deselection ONLY applies when the tactical map is maximized/open
+            if (!DynamicMap.mapMaximized)
+            {
+                return;
+            }
+
+            // If clicking on any unit icon on the map, don't deselect (user is selecting/interacting)
             if (Patches.RightClickSuppressor.TryGetUnitUnderCursor(out _)) return;
 
-            // Otherwise, it is an empty space click: deselect active targets/units
-            TryDeselectEmptySpace();
+            // Otherwise, it is an empty space click on the tactical map: deselect map icons
+            TryDeselectMapEmptySpace();
         }
 
-        private void TryDeselectEmptySpace()
+        private void TryDeselectMapEmptySpace()
         {
             if (_isOpen)
             {
@@ -99,39 +112,24 @@ namespace CommandFramework.UI
 
             try
             {
-                // 1. Deselect on Map
+                // Deselect only on the Tactical Map
                 if (DynamicMap.i != null)
                 {
                     DynamicMap.i.UnselectAll();
                     DynamicMap.i.DeselectAllIcons();
                 }
 
-                // 2. Deselect Combat HUD only if player is in an aircraft
-                if (CombatHUD.i != null)
-                {
-                    if (CombatHUD.i.aircraft != null)
-                    {
-                        CombatHUD.i.DeselectAll(true);
-                    }
-                    else
-                    {
-                        var targetListField = AccessTools.Field(typeof(CombatHUD), "targetList");
-                        var list = targetListField?.GetValue(CombatHUD.i) as System.Collections.IList;
-                        list?.Clear();
-                    }
-                }
-
-                // 3. Clear Mission Editor selection if active
+                // Clear Mission Editor map selection if active
                 if (NuclearOption.MissionEditorScripts.UnitSelection.i != null)
                 {
                     NuclearOption.MissionEditorScripts.UnitSelection.i.ClearSelection();
                 }
 
-                CommandFrameworkPlugin.LogInfo("[CommandFramework] Deselected units/targets cleanly via empty space left-click.");
+                CommandFrameworkPlugin.LogInfo("[CommandFramework] Deselected map units cleanly via empty map space left-click.");
             }
             catch (Exception ex)
             {
-                CommandFrameworkPlugin.LogError($"[CommandFramework] Error during deselection: {ex}");
+                CommandFrameworkPlugin.LogError($"[CommandFramework] Error during map deselection: {ex}");
             }
         }
 

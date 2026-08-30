@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.2] - 2026-08-30
+
+### Fixed
+- Left-click deselection is now strictly restricted to the maximized tactical map. Left-clicking during flight / 3D cockpit view no longer clears CombatHUD aircraft weapon locks or missile targets.
+
 ## [0.3.1] - 2026-08-30
 
 ### Added
