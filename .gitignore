@@ -13,3 +13,7 @@ dist/temp_package/
 # OS files
 .DS_Store
 Thumbs.db
+
+# UI Studio Designer (Workspace only)
+ui_studio.html
+*.html
