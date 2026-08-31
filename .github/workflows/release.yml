@@ -62,7 +62,5 @@ jobs:
           generate_release_notes: true
           files: |
             CommandFramework-${{ env.VERSION }}.zip
-            CommandFramework.dll
-            meta.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
