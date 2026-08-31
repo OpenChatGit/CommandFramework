@@ -66,6 +66,12 @@ namespace CommandFramework.API
             public static void Clear() => TacticalMapAPI.ClearAll();
             public static void AddThreatZone(Vector3 center, float radiusMeters, Color borderColor, Color? fillColor = null, float borderWidth = 2f, string label = null) =>
                 TacticalMapAPI.AddThreatZone(center, radiusMeters, borderColor, fillColor, borderWidth, label);
+            public static void AddPolygon(IEnumerable<Vector3> vertices, Color borderColor, Color? fillColor = null, float borderWidth = 2f) =>
+                TacticalMapAPI.AddPolygon(vertices, borderColor, fillColor, borderWidth);
+            public static void AddMarker(Vector3 worldPos, Texture2D icon, string label, Color color, float size = 24f) =>
+                TacticalMapAPI.AddMarker(worldPos, icon, label, color, size);
+            public static void RegisterLayer(IMapOverlayLayer layer) => TacticalMapAPI.RegisterLayer(layer);
+            public static void UnregisterLayer(IMapOverlayLayer layer) => TacticalMapAPI.UnregisterLayer(layer);
         }
 
         // --- Command Builder & Registration ---
