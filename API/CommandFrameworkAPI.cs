@@ -74,6 +74,40 @@ namespace CommandFramework.API
             public static void UnregisterLayer(IMapOverlayLayer layer) => TacticalMapAPI.UnregisterLayer(layer);
         }
 
+        /// <summary>
+        /// Dynamic Units, Querying, and Combat Manipulation API.
+        /// </summary>
+        public static class Units
+        {
+            public static Unit GetPlayerUnit() => UnitsAPI.GetPlayerUnit();
+            public static Aircraft GetPlayerAircraft() => UnitsAPI.GetPlayerAircraft();
+            public static FactionHQ GetPlayerHQ() => UnitsAPI.GetPlayerHQ();
+
+            public static List<Unit> GetAll(Func<Unit, bool> filter = null) => UnitsAPI.GetAll(filter);
+            public static List<T> GetAll<T>(Func<T, bool> filter = null) where T : Component => UnitsAPI.GetAll<T>(filter);
+            public static List<Unit> GetInRange(Vector3 center, float radiusMeters, Func<Unit, bool> filter = null) =>
+                UnitsAPI.GetUnitsInRange(center, radiusMeters, filter);
+            public static Unit GetNearest(Vector3 position, Func<Unit, bool> filter = null) =>
+                UnitsAPI.GetNearest(position, filter);
+
+            public static bool IsHostile(Unit a, Unit b) => UnitsAPI.IsHostile(a, b);
+            public static bool IsFriendly(Unit a, Unit b) => UnitsAPI.IsFriendly(a, b);
+
+            public static void Repair(Unit unit, float healthPercent = 1.0f) => UnitsAPI.Repair(unit, healthPercent);
+            public static void Refuel(Unit unit, float fuelPercent = 1.0f) => UnitsAPI.Refuel(unit, fuelPercent);
+            public static void Rearm(Unit unit) => UnitsAPI.Rearm(unit);
+
+            public static void SetInvulnerable(Unit unit, bool invulnerable) => UnitsAPI.SetInvulnerable(unit, invulnerable);
+            public static bool IsInvulnerable(Unit unit) => UnitsAPI.IsInvulnerable(unit);
+
+            public static void SetInfiniteAmmo(Unit unit, bool infinite) => UnitsAPI.SetInfiniteAmmo(unit, infinite);
+            public static bool HasInfiniteAmmo(Unit unit) => UnitsAPI.HasInfiniteAmmo(unit);
+
+            public static void SetCustomData<T>(Unit unit, string key, T value) => UnitsAPI.SetCustomData(unit, key, value);
+            public static T GetCustomData<T>(Unit unit, string key, T defaultValue = default) => UnitsAPI.GetCustomData(unit, key, defaultValue);
+            public static bool HasCustomData(Unit unit, string key) => UnitsAPI.HasCustomData(unit, key);
+        }
+
         // --- Command Builder & Registration ---
 
         /// <summary>
