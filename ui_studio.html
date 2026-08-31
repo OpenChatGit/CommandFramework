@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Framework - Tactical UI & HTML/CSS Designer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #07090e;
+            --panel-bg: rgba(13, 17, 23, 0.95);
+            --tactical-green: #0fe078;
+            --tactical-green-dim: rgba(15, 224, 120, 0.15);
+            --tactical-green-border: rgba(15, 224, 120, 0.45);
+            --friendly-blue: #00d2ff;
+            --amber-warn: #ffb300;
+            --hostile-red: #ff3344;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            height: 48px;
+            background: rgba(10, 14, 20, 0.98);
+            border-bottom: 1px solid var(--tactical-green-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 100;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        .logo-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+            font-size: 13px;
+            letter-spacing: 1px;
+            color: var(--tactical-green);
+        }
+
+        .tab-switcher { display: flex; gap: 6px; }
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .tab-btn:hover { color: var(--text-primary); border-color: var(--tactical-green); }
+        .tab-btn.active {
+            background: var(--tactical-green-dim);
+            border-color: var(--tactical-green);
+            color: var(--tactical-green);
+        }
+
+        .mod-pill {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--friendly-blue);
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            padding: 3px 8px;
+            border-radius: 2px;
+        }
+
+        .view-container { flex: 1; position: relative; display: none; }
+        .view-container.active { display: flex; }
+
+        /* VIEW 1: HTML & CSS LIVE DESIGNER */
+        .designer-layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .editor-column {
+            width: 380px;
+            background: #0d1117;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 14px;
+            gap: 12px;
+        }
+
+        .editor-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--tactical-green);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-editor {
+            flex: 1;
+            background: #05080c;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #7ee787;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 10px;
+            border-radius: 4px;
+            outline: none;
+            resize: none;
+            line-height: 1.45;
+            user-select: text;
+        }
+        .code-editor:focus { border-color: var(--tactical-green); }
+
+        .designer-preview-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #080c13;
+            background-image: 
+                linear-gradient(45deg, #101724 25%, transparent 25%), 
+                linear-gradient(-45deg, #101724 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #101724 75%), 
+                linear-gradient(-45deg, transparent 75%, #101724 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            position: relative;
+        }
+
+        .output-column {
+            width: 380px;
+            background: #0d1117;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 14px;
+            gap: 12px;
+        }
+
+        .action-btn {
+            background: rgba(15, 224, 120, 0.1);
+            border: 1px solid var(--tactical-green-border);
+            color: var(--tactical-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 8px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .action-btn:hover {
+            background: rgba(15, 224, 120, 0.25);
+            border-color: var(--tactical-green);
+            color: #ffffff;
+        }
+
+        .code-box {
+            flex: 1;
+            background: #020408;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #58a6ff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10.5px;
+            line-height: 1.45;
+            padding: 12px;
+            border-radius: 4px;
+            overflow-y: auto;
+            white-space: pre;
+            user-select: text;
+        }
+
+        /* Dynamic Preview Target */
+        #dynamicPreviewContainer {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <div class="logo-title">COMMAND FRAMEWORK SDK</div>
+            <div class="tab-switcher">
+                <button class="tab-btn active" id="tabDesigner" onclick="switchView('designer')">HTML & CSS UI Designer (Flagship)</button>
+                <button class="tab-btn" id="tabStudio" onclick="switchView('studio')">Interactive Context Menu Studio</button>
+            </div>
+        </div>
+        <div class="mod-pill">v0.6.0 SDK</div>
+    </header>
+
+    <!-- VIEW 1: HTML & CSS LIVE DESIGNER -->
+    <main class="view-container active" id="viewDesigner">
+        <div class="designer-layout">
+            <!-- Left: HTML & CSS Editors -->
+            <div class="editor-column">
+                <div class="editor-title">
+                    <span>TEMPLATE PRESET</span>
+                    <select id="presetSelect" onchange="loadPreset(this.value)" style="background:#05080c; color:#0fe078; border:1px solid rgba(15,224,120,0.3); font-size:10px; font-family:'JetBrains Mono'; padding:3px 6px; border-radius:2px; outline:none;">
+                        <option value="tactical_menu">Tactical Context Menu</option>
+                        <option value="game_init_banner">Game Startup Init Banner</option>
+                    </select>
+                </div>
+
+                <div class="editor-title" style="margin-top:4px;">
+                    <span>1. HTML TEMPLATE (.ui.html)</span>
+                </div>
+                <textarea class="code-editor" id="htmlEditor" oninput="compileAndPreview()"><div class="context-menu-box">
+    <div class="context-header">{{unit.name}}</div>
+    <div class="context-badge">{{order.badge}}</div>
+    
+    <button class="context-btn" icon="core.stop" @click="core.hold_position">STOP</button>
+    <button class="context-btn" icon="core.loop" @click="core.patrol_loop">PATROL LOOP</button>
+    <button class="context-btn" icon="core.formation" @click="core.formation">FORMATION</button>
+    <button class="context-btn" icon="core.hold_fire" @click="core.hold_fire">HOLD FIRE</button>
+</div></textarea>
+
+                <div class="editor-title" style="margin-top: 6px;">
+                    <span>2. CSS STYLES (.ui.css)</span>
+                </div>
+                <textarea class="code-editor" id="cssEditor" oninput="compileAndPreview()">.context-menu-box {
+    width: 210px;
+    padding: 8px 8px 10px 8px;
+    background: rgba(5, 10, 15, 0.96);
+    border: 1px solid rgba(15, 224, 120, 0.45);
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.context-header {
+    color: #0fe078;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+.context-badge {
+    color: #00d2ff;
+    font-size: 9px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+.context-btn {
+    height: 24px;
+    background: rgba(15, 224, 120, 0.08);
+    border: 1px solid rgba(15, 224, 120, 0.35);
+    border-radius: 2px;
+    color: #d6ffe8;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s;
+}
+
+.context-btn:hover {
+    background: rgba(15, 224, 120, 0.25);
+    border-color: #0fe078;
+    color: #ffffff;
+}</textarea>
+            </div>
+
+            <!-- Middle: Live Interactive Render Preview -->
+            <div class="designer-preview-column">
+                <style id="dynamicStyleTag"></style>
+                <div id="dynamicPreviewContainer"></div>
+            </div>
+
+            <!-- Right: Generated C# Code & Export -->
+            <div class="output-column">
+                <div class="editor-title">
+                    <span>3. AUTO-GENERATED C# CODE</span>
+                </div>
+                <div class="code-box" id="generatedCSharpCode"></div>
+                <button class="action-btn" onclick="exportTemplateFiles()">Export .ui.html & .ui.css</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- VIEW 2: INTERACTIVE CONTEXT MENU STUDIO -->
+    <main class="view-container" id="viewStudio">
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, #0f172a 0%, #07090e 100%);">
+            <div style="color: var(--tactical-green); font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 800;">
+                [ STUDIO ACTIVE - DESIGNED VIA DECLARATIVE ENGINE ]
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function switchView(view) {
+            document.getElementById('viewDesigner').classList.toggle('active', view === 'designer');
+            document.getElementById('viewStudio').classList.toggle('active', view === 'studio');
+            document.getElementById('tabDesigner').classList.toggle('active', view === 'designer');
+            document.getElementById('tabStudio').classList.toggle('active', view === 'studio');
+        }
+
+        function compileAndPreview() {
+            const html = document.getElementById('htmlEditor').value;
+            const css = document.getElementById('cssEditor').value;
+
+            // 1. Inject CSS
+            document.getElementById('dynamicStyleTag').innerHTML = css;
+
+            // 2. Interpolate dynamic data-bindings
+            let renderedHtml = html
+                .replace(/\{\{\s*unit\.name\s*\}\}/g, "CV-01 BROADSWORD")
+                .replace(/\{\{\s*order\.badge\s*\}\}/g, "[ ACTIVE ]")
+                .replace(/\{\{\s*init\.status\s*\}\}/g, currentShimmerMessage);
+
+            // Inject SVG icons for buttons with icon attribute
+            renderedHtml = renderedHtml.replace(/<button([^>]*)icon=["']([^"']*)["']([^>]*)>(.*?)<\/button>/g, (m, p1, icon, p2, text) => {
+                let svg = `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="10" height="10" rx="1"/></svg>`;
+                if (icon === "core.loop") svg = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13,8 A5,5 0 1,1 8,3"/><polyline points="6,1 10,3 6,5"/></svg>`;
+                if (icon === "core.formation") svg = `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="2"/><circle cx="3" cy="13" r="2"/><circle cx="13" cy="13" r="2"/></svg>`;
+                if (icon === "core.hold_fire") svg = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="5"/><line x1="8" y1="1" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="15"/><line x1="1" y1="8" x2="4" y2="8"/><line x1="12" y1="8" x2="15" y2="8"/></svg>`;
+                return `<button${p1}${p2}>${svg} ${text}</button>`;
+            });
+
+            document.getElementById('dynamicPreviewContainer').innerHTML = renderedHtml;
+
+            // 3. Generate C# Code representation
+            const csharp = `// <auto-generated>
+// Compiled automatically by Command Framework UI Compiler during build.ps1
+// </auto-generated>
+using CommandFramework.UI.Declarative;
+
+namespace CommandFramework.UI.Generated
+{
+    public static class UI_DynamicTemplate
+    {
+        private static UIDocument _doc;
+
+        public static UIDocument GetDocument()
+        {
+            if (_doc == null)
+            {
+                _doc = UIDocument.Parse(HtmlSource, CssSource);
+            }
+            return _doc;
+        }
+    }
+}`;
+            document.getElementById('generatedCSharpCode').textContent = csharp;
+        }
+
+        const shimmerMessages = [
+            ">> INITIALIZING TACTICAL CORE...",
+            ">> SYNCING FLEET FORMATION MATRICES...",
+            ">> ENGAGING HD RADAR & WAYPOINTS...",
+            ">> ALL COMMAND SYSTEMS OPERATIONAL <<"
+        ];
+        let shimmerIdx = 0;
+        let currentShimmerMessage = shimmerMessages[0];
+
+        setInterval(() => {
+            shimmerIdx = (shimmerIdx + 1) % shimmerMessages.length;
+            currentShimmerMessage = shimmerMessages[shimmerIdx];
+            if (document.getElementById('htmlEditor').value.includes('init.status')) {
+                compileAndPreview();
+            }
+        }, 1600);
+
+        const presets = {
+            tactical_menu: {
+                html: `<div class="context-menu-box">
+    <div class="context-header">{{unit.name}}</div>
+    <div class="context-badge">{{order.badge}}</div>
+    
+    <button class="context-btn" icon="core.stop" @click="core.hold_position">STOP</button>
+    <button class="context-btn" icon="core.loop" @click="core.patrol_loop">PATROL LOOP</button>
+    <button class="context-btn" icon="core.formation" @click="core.formation">FORMATION</button>
+    <button class="context-btn" icon="core.hold_fire" @click="core.hold_fire">HOLD FIRE</button>
+</div>`,
+                css: `.context-menu-box {
+    width: 210px;
+    padding: 8px 8px 10px 8px;
+    background: rgba(5, 10, 15, 0.96);
+    border: 1px solid rgba(15, 224, 120, 0.45);
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.context-header {
+    color: #0fe078;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+.context-badge {
+    color: #00d2ff;
+    font-size: 9px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+.context-btn {
+    height: 24px;
+    background: rgba(15, 224, 120, 0.08);
+    border: 1px solid rgba(15, 224, 120, 0.35);
+    border-radius: 2px;
+    color: #d6ffe8;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s;
+}
+
+.context-btn:hover {
+    background: rgba(15, 224, 120, 0.25);
+    border-color: #0fe078;
+    color: #ffffff;
+}`
+            },
+            game_init_banner: {
+                html: `<div class="init-banner-box">
+    <div class="init-header">COMMAND FRAMEWORK v0.6.0</div>
+    <div class="init-shimmer-text">{{init.status}}</div>
+</div>`,
+                css: `.init-banner-box {
+    width: 320px;
+    padding: 7px 12px 8px 12px;
+    background: rgba(6, 10, 16, 0.95);
+    border: 1px solid #ffffff;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: center;
+}
+
+.init-header {
+    color: #0fe078;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+.init-shimmer-text {
+    color: #8be9fd;
+    font-size: 9px;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 0.5px;
+    animation: shimmer 1.8s infinite ease-in-out;
+}
+
+@keyframes shimmer {
+    0% { opacity: 0.5; text-shadow: 0 0 2px rgba(0,210,255,0.3); }
+    50% { opacity: 1.0; text-shadow: 0 0 8px rgba(15,224,120,0.8); }
+    100% { opacity: 0.5; text-shadow: 0 0 2px rgba(0,210,255,0.3); }
+}`
+            }
+        };
+
+        function loadPreset(key) {
+            if (presets[key]) {
+                document.getElementById('htmlEditor').value = presets[key].html;
+                document.getElementById('cssEditor').value = presets[key].css;
+                compileAndPreview();
+            }
+        }
+
+        compileAndPreview();
+    </script>
+</body>
+</html>

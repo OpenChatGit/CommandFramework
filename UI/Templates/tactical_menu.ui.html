@@ -1,0 +1,9 @@
+<div class="context-menu-box">
+    <div class="context-header">{{unit.name}}</div>
+    <div class="context-badge">{{order.badge}}</div>
+    
+    <button class="context-btn" icon="core.stop" @click="core.hold_position">STOP</button>
+    <button class="context-btn" icon="core.loop" @click="core.patrol_loop">PATROL LOOP</button>
+    <button class="context-btn" icon="core.formation" @click="core.formation">FORMATION</button>
+    <button class="context-btn" icon="core.hold_fire" @click="core.hold_fire">HOLD FIRE</button>
+</div>
